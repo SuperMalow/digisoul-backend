@@ -157,3 +157,6 @@ CORS_ALLOW_ORIGINS = [
     'http://localhost:5173',
 ]
 
+# User Model
+# 字符串模型引用必须是 'app_label.ModelName' 形式
+AUTH_USER_MODEL = 'web.DigisoulUser'
