@@ -14,7 +14,7 @@ class UserPasswordLoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             refresh = RefreshToken.for_user(user)
-            response = Response({'result': 'success', 'user': UserSerializers(user).data, 'refresh': str(refresh), 'access': str(refresh.access_token)}, status=status.HTTP_200_OK)
+            response = Response({'result': 'success', 'refresh': str(refresh), 'access': str(refresh.access_token), 'user': UserSerializers(user).data}, status=status.HTTP_200_OK)
             print('cookie 过期时间：', settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(), '秒')
             response.set_cookie('refresh_token', str(refresh), httponly=True, samesite='Strict', max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds())
             return response
@@ -36,3 +36,10 @@ class UserLogoutView(APIView):
         response = Response({'result': 'success', 'message': except_message}, status=status.HTTP_200_OK)
         response.delete_cookie('refresh_token')
         return response
+
+# 获取用户信息
+class UserInfoView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        user = request.user
+        return Response({'result': 'success', 'user': UserSerializers(user).data}, status=status.HTTP_200_OK)

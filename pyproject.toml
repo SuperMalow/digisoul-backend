@@ -9,4 +9,6 @@ dependencies = [
     "django-cors-headers>=4.9.0",
     "djangorestframework>=3.16.1",
     "djangorestframework-simplejwt>=5.5.1",
+    "pillow>=12.1.0",
+    "shortuuid>=1.0.13",
 ]
