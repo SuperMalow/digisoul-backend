@@ -18,8 +18,11 @@ class UserPasswordLoginSerializers(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
+        print('email:', email)
+        print('password:', password)
         user = DigisoulUser.objects.filter(email=email).first()
-        if not user:
+        print('user:', user)
+        if not user or user is None:
             raise serializers.ValidationError('邮箱不存在')
         if not user.check_password(password):
             raise serializers.ValidationError('邮箱或密码错误')
