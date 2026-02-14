@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models.User import DigisoulUser
 from django.contrib.auth.admin import UserAdmin
+from web.models.Character import Character
 
 @admin.register(DigisoulUser)
 class DigisoulUserAdmin(UserAdmin):
@@ -25,3 +26,16 @@ class DigisoulUserAdmin(UserAdmin):
             'fields': ('profile', 'photo'),
         }],
     )
+
+@admin.register(Character)
+class CharacterAdmin(admin.ModelAdmin):
+    raw_id_fields = ('author',)
+    list_display = ('uuid', 'name', 'author', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('uuid', 'name', 'author__username')
+    ordering = ('-created_at',)
+    list_per_page = 20
+    list_max_show_all = 100
+    list_display_links = ('uuid', 'name', 'author')
+    list_filter = ('created_at', 'updated_at')
+    ordering = ('-created_at',)
