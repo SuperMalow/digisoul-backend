@@ -220,3 +220,6 @@ __marimo__/
 
 # Frontend static files
 digisoul/static/frontend/
+
+# Media files
+digisoul/media/

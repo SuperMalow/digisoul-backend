@@ -13,6 +13,9 @@ class UpdateUserProfileSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         instance.username = validated_data.get('username', instance.username)
         instance.profile = validated_data.get('profile', instance.profile)
+        # 如果 photo 有变化，则删除旧的图片
+        if instance.photo != validated_data.get('photo'):
+            instance.photo.delete(save=False)
         instance.photo = validated_data.get('photo', instance.photo)
         instance.save()
         return instance
