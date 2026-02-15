@@ -79,6 +79,13 @@ class GetCharacterView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        characters = Character.objects.filter(author=request.user)
-        return Response({'result': 'success', 'characters': CharacterSerializers(characters, many=True).data}, status=status.HTTP_200_OK)
-        
+        uuid = request.query_params.get('uuid')
+        if not uuid:
+            return Response({'result': 'error', 'errors': {'uuid': ['请提供角色 uuid']}}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            character = Character.objects.get(uuid=uuid)
+            if character.author != request.user:
+                return Response({'result': 'error', 'errors': {'uuid': ['你不是该角色作者，无法获取该角色信息']}}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'result': 'success', 'character': CharacterSerializers(character).data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'result': 'error', 'errors': {'uuid': [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
