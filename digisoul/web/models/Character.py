@@ -35,14 +35,12 @@ class UUIDField(CharField):
 def photo_upload_to(instance, filename):
     ext = os.path.splitext(filename)[1].lower()
     new_name = f"{shortuuid.uuid()[:20]}{ext}"
-    user_dir = getattr(instance, "uuid", None) or "temp"
-    return f"characters/photos/{user_dir}/{new_name}"
+    return f"characters/photos/{new_name}"
 
 def background_photo_upload_to(instance, filename):
     ext = os.path.splitext(filename)[1].lower()
     new_name = f"{shortuuid.uuid()[:20]}{ext}"
-    user_dir = getattr(instance, "uuid", None) or "temp"
-    return f"characters/backgrounds/{user_dir}/{new_name}"
+    return f"characters/backgrounds/{new_name}"
 
 def validate_photo_size(file):
     # 限制头像大小（默认 4MB）

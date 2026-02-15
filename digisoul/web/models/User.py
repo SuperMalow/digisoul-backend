@@ -37,8 +37,7 @@ def photo_upload_to(instance, filename):
     if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
         ext = ".png"
     new_name = f"{shortuuid.uuid()[:20]}{ext}"
-    user_dir = getattr(instance, "uuid", None) or "temp"
-    return f"user/photos/{user_dir}/{new_name}"
+    return f"user/photos/{new_name}"
 
 # 验证上传图片的大小
 def validate_photo_size(file):
