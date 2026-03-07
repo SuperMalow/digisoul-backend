@@ -49,3 +49,10 @@ class CharacterWriteSerializer(serializers.Serializer):
                 old_bg.delete(save=False)
         instance.save()
         return instance
+
+# character 列表序列化器（每项：user_profile=作者信息, characters=当前角色详情）
+class CharacterListSerializers(serializers.ModelSerializer):
+
+    class Meta:
+        model = Character
+        fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'author', 'created_at')
