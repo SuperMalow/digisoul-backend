@@ -39,13 +39,13 @@ class UserTokenRefreshView(APIView):
             refresh.set_iat()
             refresh.set_exp()
 
-            response.set_cookie(
-                'refresh_token',
-                str(refresh),
-                httponly=True,
-                samesite='Strict',
-                max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
-            )
+        response.set_cookie(
+            'refresh_token',
+            str(refresh),
+            httponly=True,
+            samesite='Strict',
+            max_age=settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds(),
+        )
 
         return response
 

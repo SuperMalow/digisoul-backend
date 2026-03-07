@@ -8,6 +8,7 @@ from web.serializers.character.CharacterSerializers import (
     CharacterSerializers,
 )
 from web.models.Character import Character
+from web.utils.delete_old_photo import delete_old_photo
 
 
 # 更新角色信息（支持部分更新与完整更新，请求体需包含 uuid 指定要更新的角色）
@@ -69,6 +70,10 @@ class DeleteCharacterView(APIView):
             character = Character.objects.get(uuid=uuid)
             if character.author != request.user:
                 return Response({'result': 'error', 'message': '你不是该角色作者，无法删除该角色'}, status=status.HTTP_401_UNAUTHORIZED)
+            # 删除角色关联的图片
+            delete_old_photo(character.photo)
+            delete_old_photo(character.background_photo)
+            # 删除角色
             character.delete()
             return Response({'result': 'success', 'message': '角色删除成功', 'character': CharacterSerializers(character).data}, status=status.HTTP_200_OK)
         except Exception as e:
