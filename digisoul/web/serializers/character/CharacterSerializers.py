@@ -50,9 +50,13 @@ class CharacterWriteSerializer(serializers.Serializer):
         instance.save()
         return instance
 
-# character 列表序列化器（每项：user_profile=作者信息, characters=当前角色详情）
+# character 列表序列化器（每项含 author_uuid 便于前端判断是否为当前用户的角色）
 class CharacterListSerializers(serializers.ModelSerializer):
+    author_uuid = serializers.SerializerMethodField(read_only=True)
+
+    def get_author_uuid(self, obj):
+        return obj.author.uuid if obj.author_id else None
 
     class Meta:
         model = Character
-        fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'author', 'created_at')
+        fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'author_uuid', 'created_at')
