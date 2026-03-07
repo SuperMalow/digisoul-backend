@@ -7,12 +7,13 @@ from rest_framework.permissions import IsAuthenticated
 from web.serializers.character.CharacterSerializers import (
     CharacterWriteSerializer,
     CharacterSerializers,
-    CharacterListSerializers,
+    CharacterListSerializers
 )
 from web.models.Character import Character
 from web.utils.delete_old_photo import delete_old_photo
 from rest_framework.pagination import PageNumberPagination
 from web.models.User import DigisoulUser
+from django.db.models import Q
 
 # 更新角色信息（支持部分更新与完整更新，请求体需包含 uuid 指定要更新的角色）
 class UpdateCharacterView(APIView):
@@ -104,7 +105,7 @@ class CharacterListPagination(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 20
 
-# 获取个人空间信息
+# 个人空间信息 - 通过用户 uuid 获取
 class GetCharacterListView(ListAPIView):
     serializer_class = CharacterListSerializers
     pagination_class = CharacterListPagination
@@ -117,3 +118,14 @@ class GetCharacterListView(ListAPIView):
         except DigisoulUser.DoesNotExist:
             return Response({'result': 'error', 'message': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
         return Character.objects.filter(author=user).order_by('-created_at')
+
+# 个人空间信息 - 通过 user 获取
+class GetCharacterListIndexView(ListAPIView):
+    serializer_class = CharacterListSerializers
+    pagination_class = CharacterListPagination
+
+    def get_queryset(self):
+        q = self.request.query_params.get('q')
+        if q:
+            return Character.objects.filter(Q(name__icontains=q) | Q(profile__icontains=q)).order_by('-created_at')
+        return Character.objects.all().order_by('-created_at')
