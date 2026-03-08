@@ -13,6 +13,7 @@ class UpdateUserProfileView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
         user = request.user
+        # partial=True 表示允许部分字段更新
         serializer = UpdateUserProfileSerializer(instance=user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
