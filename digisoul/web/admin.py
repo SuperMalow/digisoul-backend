@@ -44,11 +44,11 @@ class CharacterAdmin(admin.ModelAdmin):
 @admin.register(Friends)
 class FriendsAdmin(admin.ModelAdmin):
     raw_id_fields = ('me', 'character') # 关联字段 提高性能 会以分页方式显示
-    list_display = ('me', 'character', 'created_at', 'updated_at')
+    list_display = ('uuid', 'me', 'character', 'created_at', 'updated_at')
     list_filter = ('created_at', 'updated_at')
     search_fields = ('me__username', 'character__name')
     ordering = ('-created_at',)
     list_per_page = 20
     list_max_show_all = 100
-    list_display_links = ('me', 'character')
+    list_display_links = ('uuid', 'me', 'character')
     ordering = ('-created_at',)

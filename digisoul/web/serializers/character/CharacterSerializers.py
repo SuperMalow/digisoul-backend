@@ -50,13 +50,24 @@ class CharacterWriteSerializer(serializers.Serializer):
         instance.save()
         return instance
 
-# character 列表序列化器（每项含 author_uuid 便于前端判断是否为当前用户的角色）
+# character 列表序列化器
 class CharacterListSerializers(serializers.ModelSerializer):
-    author_uuid = serializers.SerializerMethodField(read_only=True)
+    is_friend = serializers.SerializerMethodField(read_only=True)
+    author = serializers.SerializerMethodField(read_only=True)
 
-    def get_author_uuid(self, obj):
-        return obj.author.uuid if obj.author_id else None
+    def get_author(self, obj):
+        return UserSerializers(obj.author).data if obj.author_id else None
+
+    def get_is_friend(self, obj):
+        from web.models.Friends import Friends
+        from web.serializers.friends.FriendsSerializers import FriendsWriteSerializers
+        # 查询friends表,判断是否存在当前用户的好友关系
+        user = self.context['request'].user
+        friend = Friends.objects.filter(character=obj, me=user).first()
+        # print('friend: ', friend);
+        return FriendsWriteSerializers(friend).data if friend else None
 
     class Meta:
         model = Character
-        fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'author_uuid', 'created_at')
+        fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'created_at', 'is_friend', 'author')
+        
