@@ -6,6 +6,7 @@ urlpatterns = [
     path('user/', include('web.urls.user')),
     path('token/', include('web.urls.token')),
     path('character/', include('web.urls.character')),
+    path('friends/', include('web.urls.friends')),
 
     # 匹配所有非 media/、static/ 和 assets/ 的请求，并返回 index.html
     re_path(r'^(?!media/|static/|assets/).*$', index)

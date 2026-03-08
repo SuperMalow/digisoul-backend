@@ -223,3 +223,6 @@ digisoul/static/frontend/
 
 # Media files
 digisoul/media/
+
+# migrations
+digisoul/web/migrations/

@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models.User import DigisoulUser
 from django.contrib.auth.admin import UserAdmin
 from web.models.Character import Character
+from web.models.Friends import Friends
 
 @admin.register(DigisoulUser)
 class DigisoulUserAdmin(UserAdmin):
@@ -29,7 +30,7 @@ class DigisoulUserAdmin(UserAdmin):
 
 @admin.register(Character)
 class CharacterAdmin(admin.ModelAdmin):
-    raw_id_fields = ('author',)
+    raw_id_fields = ('author',) # 关联字段 提高性能 会以分页方式显示
     list_display = ('uuid', 'name', 'author', 'created_at', 'updated_at')
     list_filter = ('created_at', 'updated_at')
     search_fields = ('uuid', 'name', 'author__username')
@@ -38,4 +39,16 @@ class CharacterAdmin(admin.ModelAdmin):
     list_max_show_all = 100
     list_display_links = ('uuid', 'name', 'author')
     list_filter = ('created_at', 'updated_at')
+    ordering = ('-created_at',)
+
+@admin.register(Friends)
+class FriendsAdmin(admin.ModelAdmin):
+    raw_id_fields = ('me', 'character') # 关联字段 提高性能 会以分页方式显示
+    list_display = ('me', 'character', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('me__username', 'character__name')
+    ordering = ('-created_at',)
+    list_per_page = 20
+    list_max_show_all = 100
+    list_display_links = ('me', 'character')
     ordering = ('-created_at',)
