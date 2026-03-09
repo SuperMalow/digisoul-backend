@@ -226,3 +226,6 @@ digisoul/media/
 
 # migrations
 digisoul/web/migrations/
+
+# .env
+*.env

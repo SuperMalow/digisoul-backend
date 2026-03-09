@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models.User import DigisoulUser
 from django.contrib.auth.admin import UserAdmin
 from web.models.Character import Character
-from web.models.Friends import Friends
+from web.models.Friends import Friends, Message
 
 @admin.register(DigisoulUser)
 class DigisoulUserAdmin(UserAdmin):
@@ -52,3 +52,7 @@ class FriendsAdmin(admin.ModelAdmin):
     list_max_show_all = 100
     list_display_links = ('uuid', 'me', 'character')
     ordering = ('-created_at',)
+
+@admin.register(Message)
+class messageAdmin(admin.ModelAdmin):
+    raw_id_fields = ('friend',) # 关联字段 提高性能 会以分页方式显示
