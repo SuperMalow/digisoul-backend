@@ -9,11 +9,18 @@ from langgraph.graph import StateGraph
 
 class ChatGraph:
     @staticmethod
-    def create_char_app():
+    def create_char_app(thinking_enabled=False):
         llm = ChatOpenAI(
             model='qwen3.5-flash',
             base_url=os.getenv('API_BASE'),
             api_key=os.getenv('DASHSCOPE_API_KEY'),
+            streaming=True,
+            extra_body={"enable_thinking": thinking_enabled},
+            model_kwargs={
+                "stream_options": {
+                    "include_usage": True, # 蔬菜token的消耗数
+                }
+            }
         )
 
         class AgentState(TypedDict):
