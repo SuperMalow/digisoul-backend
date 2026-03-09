@@ -1,7 +1,7 @@
 from django.urls import path
 
 from web.views.friends.friends import CreateFriendsView, DeleteFriendsView, GetFriendsListView
-from web.views.friends.message import MessageChatView
+from web.views.friends.message import MessageChatView, GetMessageHistoryView
 
 urlpatterns = [
     path('create/', CreateFriendsView.as_view(), name='create_friends'),
@@ -10,4 +10,5 @@ urlpatterns = [
 
     # message
     path('message/chat/', MessageChatView.as_view(), name='message_chat'),
+    path('message/history/', GetMessageHistoryView.as_view(), name='message_history'),
 ]

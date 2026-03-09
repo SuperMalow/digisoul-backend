@@ -56,3 +56,11 @@ class FriendsAdmin(admin.ModelAdmin):
 @admin.register(Message)
 class messageAdmin(admin.ModelAdmin):
     raw_id_fields = ('friend',) # 关联字段 提高性能 会以分页方式显示
+    list_display = ('friend__uuid', 'friend', 'input_tokens', 'output_tokens', 'total_tokens', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('friend__me__username', 'friend__character__name')
+    ordering = ('-created_at',)
+    list_per_page = 20
+    list_max_show_all = 100
+    list_display_links = ('friend__uuid', 'friend')
+    ordering = ('-created_at',)

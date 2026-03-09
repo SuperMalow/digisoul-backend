@@ -21,3 +21,4 @@ class FriendsSerializers(serializers.ModelSerializer):
     class Meta:
         model = Friends
         fields = ['uuid', 'character', 'memory', 'created_at', 'updated_at']
+    
