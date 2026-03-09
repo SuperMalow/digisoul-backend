@@ -23,6 +23,7 @@ class Friends(models.Model):
 
 # 记录角色与用户之间的聊天记录
 class Message(models.Model):
+    uuid = UUIDField(unique=True, auto=True, prefix='message', length=16, max_length=30)
     friend = models.ForeignKey(Friends, on_delete=models.CASCADE, related_name='friend', to_field='uuid') # 直接记录角色和用户
     user_message = models.TextField(default='', max_length=10000, blank=True, null=True) # 用户发送的消息
     input = models.TextField(default='', max_length=10000, blank=True, null=True) # 角色输入的消息
