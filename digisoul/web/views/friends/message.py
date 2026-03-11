@@ -9,11 +9,12 @@ from web.models.Friends import Message, Friends
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView
 from web.utils.ChatGraph import ChatGraph
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, BaseMessageChunk
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, BaseMessageChunk, SystemMessage
 import json
 from rest_framework.renderers import BaseRenderer
 from django.http import StreamingHttpResponse
 from web.serializers.friends.MessageSerializers import HistoryMessageSerializers
+from web.models.Prompt import SystemPrompt
 
 # 伪渲染器
 class SSERenderer(BaseRenderer):
@@ -22,6 +23,27 @@ class SSERenderer(BaseRenderer):
     charset = 'utf-8'
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return data
+
+# 手动添加系统提示词
+def add_system_prompt(state, friends):
+    msgs = state['messages']
+    system_prompt = SystemPrompt.objects.filter(title='角色与用户之间的聊天记录').order_by('order_number')
+    prompt = ''
+    for prompt  in system_prompt:
+        prompt += prompt.prompt
+    prompt += f'\n[角色性格]: {friends.character.profile}\n'
+    return {'messages': [SystemMessage(content=prompt)] + msgs}
+
+# 手动添加最近的十条对话内容
+def add_recent_messages(state, friends):
+    msgs = state['messages']
+    messages = list(Message.objects.filter(friend=friends).order_by('-created_at')[:10])
+    messages.reverse()
+    fianl_messages = []
+    for message in messages:
+        fianl_messages.append(HumanMessage(content=message.user_message))
+        fianl_messages.append(AIMessage(content=message.output))
+    return {'messages': msgs[:1] + fianl_messages + msgs[-1:]}
 
 # 获取角色与用户之间的聊天记录
 class MessageChatView(APIView):
@@ -43,6 +65,11 @@ class MessageChatView(APIView):
         inputs = {
             'messages': [HumanMessage(content=message)]
         }
+
+        # 添加系统提示词语
+        inputs = add_system_prompt(inputs, friend)
+        inputs = add_recent_messages(inputs, friend)
+        # print(inputs['messages'])
 
         # res = agent.invoke(inputs)
         # print(res['messages'])
