@@ -44,7 +44,7 @@ class MessageChatView(APIView):
             'messages': [HumanMessage(content=message)]
         }
 
-        res = agent.invoke(inputs)
+        # res = agent.invoke(inputs)
         # print(res['messages'])
 
         # 流式输出迭代器

@@ -3,6 +3,7 @@ from .models.User import DigisoulUser
 from django.contrib.auth.admin import UserAdmin
 from web.models.Character import Character
 from web.models.Friends import Friends, Message
+from web.models.Prompt import SystemPrompt
 
 @admin.register(DigisoulUser)
 class DigisoulUserAdmin(UserAdmin):
@@ -63,4 +64,15 @@ class messageAdmin(admin.ModelAdmin):
     list_per_page = 20
     list_max_show_all = 100
     list_display_links = ('friend__uuid', 'friend')
+    ordering = ('-created_at',)
+
+@admin.register(SystemPrompt)
+class SystemPromptAdmin(admin.ModelAdmin):
+    list_display = ('uuid', 'title', 'order_number', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('title', 'order_number')
+    ordering = ('-created_at',)
+    list_per_page = 20
+    list_max_show_all = 100
+    list_display_links = ('uuid', 'title', 'order_number')
     ordering = ('-created_at',)
