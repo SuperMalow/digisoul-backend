@@ -57,7 +57,7 @@ class ChatGraph:
             messages: Annotated[Sequence[BaseMessage], add_messages]
 
         def model_call(state: AgentState) -> AgentState:
-            # pprint(state['messages'])
+            pprint(state['messages'])
             # 将state的消息传给大模型
             res = llm.invoke(state['messages'])
             # 再把大模型的返回结果添加到消息列表中

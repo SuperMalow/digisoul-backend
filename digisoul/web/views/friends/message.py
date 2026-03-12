@@ -106,7 +106,7 @@ class MessageChatView(APIView):
                 total_tokens=total_token,
             )
             # 每10条消息更新一次长期记忆
-            if Message.objects.filter(friend=friend).count() % 1 == 0:
+            if Message.objects.filter(friend=friend).count() % 10 == 0:
                 update_memory(friend)
 
         response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
