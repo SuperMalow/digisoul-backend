@@ -15,6 +15,7 @@ from rest_framework.renderers import BaseRenderer
 from django.http import StreamingHttpResponse
 from web.serializers.friends.MessageSerializers import HistoryMessageSerializers
 from web.models.Prompt import SystemPrompt
+from web.utils.MemoryGraph import update_memory
 
 # 伪渲染器
 class SSERenderer(BaseRenderer):
@@ -32,6 +33,8 @@ def add_system_prompt(state, friends):
     for prompt  in system_prompt:
         prompt += prompt.prompt
     prompt += f'\n[角色性格]: {friends.character.profile}\n'
+    # 添加长期记忆
+    prompt += f'\n[长期记忆]: {friends.memory}\n'
     return {'messages': [SystemMessage(content=prompt)] + msgs}
 
 # 手动添加最近的十条对话内容
@@ -102,6 +105,9 @@ class MessageChatView(APIView):
                 output_tokens=output_token,
                 total_tokens=total_token,
             )
+            # 每10条消息更新一次长期记忆
+            if Message.objects.filter(friend=friend).count() % 1 == 0:
+                update_memory(friend)
 
         response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
