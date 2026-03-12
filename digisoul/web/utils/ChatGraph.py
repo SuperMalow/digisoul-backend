@@ -9,18 +9,36 @@ from langgraph.graph import StateGraph
 from langchain.tools import tool
 from django.utils.timezone import localtime, now
 from langgraph.prebuilt import ToolNode
+import lancedb
+from langchain_community.vectorstores import LanceDB
+from web.documents.utils.custom_embeddings import CustomEmbeddings
+from pprint import pprint
 
-# 工具函数
-@tool
+@tool('get_datetime', description='在用户想要查询当前日期时间，优先使用该工具')
 def get_datetime():
     """查询当前的时间，返回格式为：年-月-日 时:分:秒"""
     return localtime(now()).strftime('%Y-%m-%d %H:%M:%S')
+
+@tool('search_knowledge_base', description='在用户想要查询阿里云百炼平台的相关信息，优先使用该工具')
+def search_knowledge_base(question: str):
+    """当用户查询阿里云百炼平台相关信息时，使用该工具。输入为用户的问题，输出为查询的结果。"""
+    db = lancedb.connect('web/documents/db/lancedb_storage')
+    embeddings = CustomEmbeddings()
+    vector_db = LanceDB(
+        embedding=embeddings,
+        connection=db,
+        table_name='my_knowledge_base',
+    )
+    docs = vector_db.similarity_search(question, k=3)
+    context = '\n\n'.join([f'内容片段：{i + 1}\n{doc.page_content}' for i, doc in enumerate(docs)])
+    return f'从数据内查找到以下相关信息：\n\n{context}\n'
+
 
 # 创建角色对话图谱
 class ChatGraph:
     @staticmethod
     def create_char_app(thinking_enabled=False):
-        tools = [get_datetime]
+        tools = [get_datetime, search_knowledge_base]
         llm = ChatOpenAI(
             model='qwen3.5-flash',
             base_url=os.getenv('API_BASE'),
@@ -39,6 +57,7 @@ class ChatGraph:
             messages: Annotated[Sequence[BaseMessage], add_messages]
 
         def model_call(state: AgentState) -> AgentState:
+            # pprint(state['messages'])
             # 将state的消息传给大模型
             res = llm.invoke(state['messages'])
             # 再把大模型的返回结果添加到消息列表中

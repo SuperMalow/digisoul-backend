@@ -229,3 +229,9 @@ digisoul/web/migrations/
 
 # .env
 *.env
+
+# documents/data
+digisoul/web/documents/data/
+
+# documents/db
+digisoul/web/documents/db/
