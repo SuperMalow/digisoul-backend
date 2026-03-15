@@ -81,6 +81,7 @@ class MessageChatView(APIView):
             content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['Content-Type'] = 'text/event-stream'
+        response['X-Accel-Buffering'] = 'no' # 防止nginx缓存，起不到很好的流式效果
         return response
 
     # 流式输出迭代器
