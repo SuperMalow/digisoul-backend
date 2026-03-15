@@ -74,48 +74,47 @@ class MessageChatView(APIView):
         # 添加系统提示词语
         inputs = add_system_prompt(inputs, friend)
         inputs = add_recent_messages(inputs, friend)
-        # print(inputs['messages'])
 
-        # res = agent.invoke(inputs)
-        # print(res['messages'])
-
-        # 流式输出迭代器
-        def event_stream():
-            full_output = ''
-            full_usage = {}
-            for msg, metadata in agent.stream(inputs, stream_mode="messages"):
-                if isinstance(msg, BaseMessageChunk):
-                    if msg.content:
-                        full_output += msg.content
-                        yield f'data: {json.dumps({'content': msg.content}, ensure_ascii=False)}\n\n'
-                    if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
-                        full_usage = msg.usage_metadata
-            yield 'data: [DONE]\n\n'
-            
-            input_token = full_usage.get('input_tokens', 0)
-            output_token = full_usage.get('output_tokens', 0)
-            total_token = full_usage.get('total_tokens', 0)
-            Message.objects.create(
-                friend=friend,
-                user_message=message[:5000],
-                audio_message=audio_message if audio_message else None,
-                input=json.dumps(
-                    [m.model_dump()for m in inputs['messages']],
-                    ensure_ascii=False,
-                )[:10000],
-                output=full_output[:10000],
-                input_tokens=input_token,
-                output_tokens=output_token,
-                total_tokens=total_token,
-            )
-            # 每10条消息更新一次长期记忆
-            if Message.objects.filter(friend=friend).count() % 10 == 0:
-                update_memory(friend)
-
-        response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+        # 流式输出响应
+        response = StreamingHttpResponse(
+            self.event_stream(agent, inputs, friend, message, audio_message),
+            content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['Content-Type'] = 'text/event-stream'
         return response
+
+    # 流式输出迭代器
+    def event_stream(self, agent, inputs, friend, message, audio_message):
+        full_output = ''
+        full_usage = {}
+        for msg, metadata in agent.stream(inputs, stream_mode="messages"):
+            if isinstance(msg, BaseMessageChunk):
+                if msg.content:
+                    full_output += msg.content
+                    yield f'data: {json.dumps({'content': msg.content}, ensure_ascii=False)}\n\n'
+                if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
+                    full_usage = msg.usage_metadata
+        yield 'data: [DONE]\n\n'
+        
+        input_token = full_usage.get('input_tokens', 0)
+        output_token = full_usage.get('output_tokens', 0)
+        total_token = full_usage.get('total_tokens', 0)
+        Message.objects.create(
+            friend=friend,
+            user_message=message[:5000],
+            audio_message=audio_message if audio_message else None,
+            input=json.dumps(
+                [m.model_dump()for m in inputs['messages']],
+                ensure_ascii=False,
+            )[:10000],
+            output=full_output[:10000],
+            input_tokens=input_token,
+            output_tokens=output_token,
+            total_tokens=total_token,
+        )
+        # 每10条消息更新一次长期记忆
+        if Message.objects.filter(friend=friend).count() % 10 == 0:
+            update_memory(friend)
 
 # 获取历史消息分页器
 class MessageHistoryPagination(PageNumberPagination):
