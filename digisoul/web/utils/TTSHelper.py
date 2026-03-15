@@ -44,8 +44,8 @@ def _get_run_task_header(task_id):
                 "format": "mp3",
                 "sample_rate": 22050, # 采样率
                 "volume": 50, # 音量
-                "rate": 1.3, # 语速
-                "pitch": 1 # 音调
+                "rate": 1.2, # 语速
+                "pitch": 1.1 # 音调
             },
             "input": {}
         }
@@ -83,6 +83,7 @@ async def _tts_sender(text_q, ws, task_id, llm_done_event):
     loop = asyncio.get_event_loop()
     while True:
         try:
+            # 从队列中读取句子并发送到 TTS WebSocket
             text = await loop.run_in_executor(
                 None, lambda: text_q.get(timeout=0.15)
             )
@@ -134,12 +135,14 @@ async def run_tts_pipeline(text_q, audio_q, llm_done_event):
     async with websockets.connect(wss_url, additional_headers=headers) as ws:
         await ws.send(_get_run_task_header(task_id))
 
+        # 监听是否返回task-started事件，开始握手
         async for msg in ws:
             data = json.loads(msg)
             if data['header']['event'] == 'task-started':
                 print("[TTSHelper] task-started received")
                 break
 
+        # 跟TTS模型握手成功，开始建立发送和接收的异步任务
         await asyncio.gather(
             _tts_sender(text_q, ws, task_id, llm_done_event),
             _tts_receiver(ws, audio_q),

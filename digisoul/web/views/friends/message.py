@@ -72,8 +72,11 @@ class MessageChatView(APIView):
         if not friends.exists():
             return Response({'result': 'error', 'message': '好友不存在'}, status=status.HTTP_404_NOT_FOUND)
         friend = friends.first()
+        
+        # 创建角色对话图谱
         agent = ChatGraph.create_char_app()
 
+        # 创建输入
         inputs = {
             'messages': [HumanMessage(content=message)]
         }
@@ -82,6 +85,7 @@ class MessageChatView(APIView):
         inputs = add_system_prompt(inputs, friend)
         inputs = add_recent_messages(inputs, friend)
 
+        # 检查是否需要输出语音
         enable_tts = str(request.data.get('enable_tts', '')).lower() in ('true', '1')
 
         if enable_tts:
@@ -95,6 +99,7 @@ class MessageChatView(APIView):
         response['X-Accel-Buffering'] = 'no'
         return response
 
+    # 保存对话消息到数据库当中
     def _save_message(self, friend, message, audio_message, inputs, full_output, full_usage, tts_audio_file=None):
         input_token = full_usage.get('input_tokens', 0)
         output_token = full_usage.get('output_tokens', 0)
@@ -113,6 +118,7 @@ class MessageChatView(APIView):
             output_tokens=output_token,
             total_tokens=total_token,
         )
+        # 每10条消息，更新一次长期记忆
         if Message.objects.filter(friend=friend).count() % 10 == 0:
             update_memory(friend)
 
@@ -128,8 +134,10 @@ class MessageChatView(APIView):
                 if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
                     full_usage = msg.usage_metadata
         yield 'data: [DONE]\n\n'
+        # 保存对话消息到数据库当中
         self._save_message(friend, message, audio_message, inputs, full_output, full_usage)
 
+    # 生成音频流式输出
     @staticmethod
     def _yield_audio_events(audio_q, collector=None, blocking=False, timeout=0.1):
         """从 audio_q 中取出数据并生成 SSE 事件, 遇到 SENTENCE_END_MARKER 生成 audio_end.
@@ -153,8 +161,12 @@ class MessageChatView(APIView):
         sentence_buffer = ''
         audio_b64_chunks = []
 
+        # 线程安全的队列 queue.Queue()
+        # llm流式生成文字，将按照句子进行入队
         text_q = queue.Queue()
+        # 根据 text_q 的句子，通过tts流式生成音频，进行入队
         audio_q = queue.Queue()
+        # 创建一个事件，用于通知大模型流式输出结束
         llm_done_event = threading.Event()
 
         _, tts_done_event = start_tts_thread(text_q, audio_q, llm_done_event)
@@ -166,8 +178,10 @@ class MessageChatView(APIView):
                     yield f'data: {json.dumps({"content": msg.content}, ensure_ascii=False)}\n\n'
 
                     sentence_buffer += msg.content
+                    # 将从大模型流式输出的sentence_buffer内容中进行句子的切分
                     sentence, sentence_buffer = split_sentences(sentence_buffer)
                     if sentence and sentence.strip():
+                        # 送进TTS线程中进行TTS处理
                         text_q.put(sentence)
 
                 if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
@@ -180,16 +194,20 @@ class MessageChatView(APIView):
 
         llm_done_event.set()
 
+        # 等待TTS线程结束，或者音频队列不为空
         while not tts_done_event.is_set() or not audio_q.empty():
+            # 从音频队列中取出数据并生成 SSE 事件, 遇到 SENTENCE_END_MARKER 生成 audio_end.
             yield from self._yield_audio_events(audio_q, collector=audio_b64_chunks, blocking=True)
 
         yield 'data: [DONE]\n\n'
 
+        # 将音频队列中的数据进行合并，生成音频文件
         tts_file = None
         if audio_b64_chunks:
             audio_bytes = b''.join(base64.b64decode(chunk) for chunk in audio_b64_chunks)
             tts_file = ContentFile(audio_bytes, name='tts_response.mp3')
 
+        # 保存对话消息到数据库当中
         self._save_message(friend, message, audio_message, inputs, full_output, full_usage, tts_file)
 
 # 获取历史消息分页器
