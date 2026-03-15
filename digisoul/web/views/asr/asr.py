@@ -7,6 +7,7 @@ import uuid
 import os
 import websockets
 import json
+from pprint import pprint
 
 # 语音识别视图
 class ASRView(APIView):
@@ -52,26 +53,28 @@ class ASRView(APIView):
 
     async def asr_sender(self, pcm_data, ws, task_id):
         chunk = 3200
-        # print("开始发送语音信息!")
+        print("开始发送语音信息!")
         for i in range(0, len(pcm_data), chunk):
             await ws.send(pcm_data[i: i+chunk])
-            await asyncio.sleep(0.01)
-        # print("发送语音信息完毕!")
+            await asyncio.sleep(0.1)
+        print("发送语音信息完毕!")
         # 发送完毕后，发送结束事件
         finished_header = self._get_task_finished_header(task_id)
         await ws.send(finished_header)
 
     async def asr_receiver(self, ws):
         text = ''
-        # print("开始接受语音信息!")
+        print("开始接受语音信息!")
         async for msg in ws:
             data = json.loads(msg)
             event = data['header']['event'] 
             if event == 'result-generated':
                 output = data['payload']['output']
-                if output.get('transcription', None) and output.get('transcription').get('sentence_end', None):
+                # pprint(output)
+                if output.get('transcription', None) and output['transcription']['sentence_end']:
                     text += output['transcription']['text']
-            elif event == 'task-finished' or event == 'task-failed':
+                    print("text ==> ", text)
+            elif event in ['task-finished', 'task-failed']:
                 break
         print("接受语音信息完毕!")
         return text

@@ -13,4 +13,4 @@ class HistoryMessageSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['uuid', 'friend_uuid', 'user_message', 'output', 'created_at']
+        fields = ['uuid', 'friend_uuid', 'user_message', 'audio_message', 'output', 'created_at']
