@@ -3,6 +3,8 @@ from django.urls import path
 from web.views.friends.friends import CreateFriendsView, DeleteFriendsView, GetFriendsListView
 from web.views.friends.message import MessageChatView, GetMessageHistoryView
 
+from web.views.asr.asr import ASRView
+
 urlpatterns = [
     path('create/', CreateFriendsView.as_view(), name='create_friends'),
     path('delete/', DeleteFriendsView.as_view(), name='delete_friends'),
@@ -11,4 +13,7 @@ urlpatterns = [
     # message
     path('message/chat/', MessageChatView.as_view(), name='message_chat'),
     path('message/history/', GetMessageHistoryView.as_view(), name='message_history'),
+
+    # asr
+    path('messages/asr/asr/', ASRView.as_view(), name='asr'),
 ]
