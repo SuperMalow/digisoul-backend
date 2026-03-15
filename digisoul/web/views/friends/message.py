@@ -47,7 +47,7 @@ def add_system_prompt(state, friends):
 # 手动添加最近的十条对话内容
 def add_recent_messages(state, friends):
     msgs = state['messages']
-    messages = list(Message.objects.filter(friend=friends).order_by('-created_at')[:10])
+    messages = list(Message.objects.filter(friend=friends).order_by('-created_at').only('user_message', 'output')[:10])
     messages.reverse()
     fianl_messages = []
     for message in messages:
@@ -55,7 +55,7 @@ def add_recent_messages(state, friends):
         fianl_messages.append(AIMessage(content=message.output))
     return {'messages': msgs[:1] + fianl_messages + msgs[-1:]}
 
-# 获取角色与用户之间的聊天记录
+# 跟角色进行聊天
 class MessageChatView(APIView):
     permission_classes = [IsAuthenticated]
     renderer_classes = [SSERenderer]
