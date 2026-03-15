@@ -1,21 +1,28 @@
 # 角色与用户之间的聊天记录视图
 
+import base64
+import json
+import queue
+import threading
+
 from telnetlib import EC
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from web.models.Friends import Message, Friends
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView
-from web.utils.ChatGraph import ChatGraph
-from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, BaseMessageChunk, SystemMessage
-import json
 from rest_framework.renderers import BaseRenderer
 from django.http import StreamingHttpResponse
-from web.serializers.friends.MessageSerializers import HistoryMessageSerializers
+from django.core.files.base import ContentFile
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, BaseMessageChunk, SystemMessage
+
+from web.models.Friends import Message, Friends
 from web.models.Prompt import SystemPrompt
+from web.utils.ChatGraph import ChatGraph
 from web.utils.MemoryGraph import update_memory
+from web.utils.TTSHelper import split_sentences, start_tts_thread, SENTENCE_END_MARKER
+from web.serializers.friends.MessageSerializers import HistoryMessageSerializers
 
 # 伪渲染器
 class SSERenderer(BaseRenderer):
@@ -75,28 +82,20 @@ class MessageChatView(APIView):
         inputs = add_system_prompt(inputs, friend)
         inputs = add_recent_messages(inputs, friend)
 
-        # 流式输出响应
-        response = StreamingHttpResponse(
-            self.event_stream(agent, inputs, friend, message, audio_message),
-            content_type='text/event-stream')
+        enable_tts = str(request.data.get('enable_tts', '')).lower() in ('true', '1')
+
+        if enable_tts:
+            stream_iter = self.event_stream_with_tts(agent, inputs, friend, message, audio_message)
+        else:
+            stream_iter = self.event_stream(agent, inputs, friend, message, audio_message)
+
+        response = StreamingHttpResponse(stream_iter, content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['Content-Type'] = 'text/event-stream'
-        response['X-Accel-Buffering'] = 'no' # 防止nginx缓存，起不到很好的流式效果
+        response['X-Accel-Buffering'] = 'no'
         return response
 
-    # 流式输出迭代器
-    def event_stream(self, agent, inputs, friend, message, audio_message):
-        full_output = ''
-        full_usage = {}
-        for msg, metadata in agent.stream(inputs, stream_mode="messages"):
-            if isinstance(msg, BaseMessageChunk):
-                if msg.content:
-                    full_output += msg.content
-                    yield f'data: {json.dumps({'content': msg.content}, ensure_ascii=False)}\n\n'
-                if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
-                    full_usage = msg.usage_metadata
-        yield 'data: [DONE]\n\n'
-        
+    def _save_message(self, friend, message, audio_message, inputs, full_output, full_usage, tts_audio_file=None):
         input_token = full_usage.get('input_tokens', 0)
         output_token = full_usage.get('output_tokens', 0)
         total_token = full_usage.get('total_tokens', 0)
@@ -104,8 +103,9 @@ class MessageChatView(APIView):
             friend=friend,
             user_message=message[:5000],
             audio_message=audio_message if audio_message else None,
+            tts_audio=tts_audio_file,
             input=json.dumps(
-                [m.model_dump()for m in inputs['messages']],
+                [m.model_dump() for m in inputs['messages']],
                 ensure_ascii=False,
             )[:10000],
             output=full_output[:10000],
@@ -113,9 +113,84 @@ class MessageChatView(APIView):
             output_tokens=output_token,
             total_tokens=total_token,
         )
-        # 每10条消息更新一次长期记忆
         if Message.objects.filter(friend=friend).count() % 10 == 0:
             update_memory(friend)
+
+    # 纯文字流式输出
+    def event_stream(self, agent, inputs, friend, message, audio_message):
+        full_output = ''
+        full_usage = {}
+        for msg, metadata in agent.stream(inputs, stream_mode="messages"):
+            if isinstance(msg, BaseMessageChunk):
+                if msg.content:
+                    full_output += msg.content
+                    yield f'data: {json.dumps({"content": msg.content}, ensure_ascii=False)}\n\n'
+                if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
+                    full_usage = msg.usage_metadata
+        yield 'data: [DONE]\n\n'
+        self._save_message(friend, message, audio_message, inputs, full_output, full_usage)
+
+    @staticmethod
+    def _yield_audio_events(audio_q, collector=None, blocking=False, timeout=0.1):
+        """从 audio_q 中取出数据并生成 SSE 事件, 遇到 SENTENCE_END_MARKER 生成 audio_end.
+        如果传入 collector (list), 同时将 base64 音频块追加进去用于后续保存."""
+        while True:
+            try:
+                item = audio_q.get(timeout=timeout) if blocking else audio_q.get_nowait()
+            except queue.Empty:
+                break
+            if item == SENTENCE_END_MARKER:
+                yield f'data: {json.dumps({"audio_end": True})}\n\n'
+            else:
+                if collector is not None:
+                    collector.append(item)
+                yield f'data: {json.dumps({"audio": item}, ensure_ascii=False)}\n\n'
+
+    # 文字 + TTS 音频并行流式输出
+    def event_stream_with_tts(self, agent, inputs, friend, message, audio_message):
+        full_output = ''
+        full_usage = {}
+        sentence_buffer = ''
+        audio_b64_chunks = []
+
+        text_q = queue.Queue()
+        audio_q = queue.Queue()
+        llm_done_event = threading.Event()
+
+        _, tts_done_event = start_tts_thread(text_q, audio_q, llm_done_event)
+
+        for msg, metadata in agent.stream(inputs, stream_mode="messages"):
+            if isinstance(msg, BaseMessageChunk):
+                if msg.content:
+                    full_output += msg.content
+                    yield f'data: {json.dumps({"content": msg.content}, ensure_ascii=False)}\n\n'
+
+                    sentence_buffer += msg.content
+                    sentence, sentence_buffer = split_sentences(sentence_buffer)
+                    if sentence and sentence.strip():
+                        text_q.put(sentence)
+
+                if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
+                    full_usage = msg.usage_metadata
+
+            yield from self._yield_audio_events(audio_q, collector=audio_b64_chunks)
+
+        if sentence_buffer.strip():
+            text_q.put(sentence_buffer)
+
+        llm_done_event.set()
+
+        while not tts_done_event.is_set() or not audio_q.empty():
+            yield from self._yield_audio_events(audio_q, collector=audio_b64_chunks, blocking=True)
+
+        yield 'data: [DONE]\n\n'
+
+        tts_file = None
+        if audio_b64_chunks:
+            audio_bytes = b''.join(base64.b64decode(chunk) for chunk in audio_b64_chunks)
+            tts_file = ContentFile(audio_bytes, name='tts_response.mp3')
+
+        self._save_message(friend, message, audio_message, inputs, full_output, full_usage, tts_file)
 
 # 获取历史消息分页器
 class MessageHistoryPagination(PageNumberPagination):

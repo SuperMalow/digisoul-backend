@@ -48,6 +48,10 @@ class Message(models.Model):
         validate_audio_file_extension,
         FileExtensionValidator(allowed_extensions=["mp3", "m4a"]),
     ], verbose_name='语音文件', default=None, null=True, blank=True) # 用户的语音文件
+    tts_audio = models.FileField(upload_to=audio_upload_to, validators=[
+        validate_audio_file_extension,
+        FileExtensionValidator(allowed_extensions=["mp3", "m4a"]),
+    ], verbose_name='TTS语音文件', default=None, null=True, blank=True) # AI 的 TTS 语音回复
     input = models.TextField(default='', max_length=10000, blank=True, null=True) # 角色输入的消息
     output = models.TextField(default='', max_length=10000, blank=True, null=True) # 角色输出的消息
     input_tokens = models.IntegerField(default=0) # 输入的token数
