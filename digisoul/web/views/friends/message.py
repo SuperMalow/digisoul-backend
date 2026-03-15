@@ -55,7 +55,8 @@ class MessageChatView(APIView):
     def post(self, request):
         friend_uuid = request.data.get('friend_uuid')
         message = request.data.get('message')
-        audio_message = request.data.get('audio_message')
+        audio_message = request.FILES.get('audio_files')
+
         if not message:
             return Response({'result': 'error', 'message': 'message不能为空'}, status=status.HTTP_400_BAD_REQUEST)
         if not friend_uuid:

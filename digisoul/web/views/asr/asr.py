@@ -55,7 +55,7 @@ class ASRView(APIView):
         # print("开始发送语音信息!")
         for i in range(0, len(pcm_data), chunk):
             await ws.send(pcm_data[i: i+chunk])
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
         # print("发送语音信息完毕!")
         # 发送完毕后，发送结束事件
         finished_header = self._get_task_finished_header(task_id)
