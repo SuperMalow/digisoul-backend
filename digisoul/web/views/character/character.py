@@ -9,11 +9,12 @@ from web.serializers.character.CharacterSerializers import (
     CharacterSerializers,
     CharacterListSerializers
 )
-from web.models.Character import Character
+from web.models.Character import Character, CharacterSettings, CharacterVoice
 from web.utils.delete_old_photo import delete_old_photo
 from rest_framework.pagination import PageNumberPagination
 from web.models.User import DigisoulUser
 from django.db.models import Q
+from django.db import transaction
 
 # 更新角色信息（支持部分更新与完整更新，请求体需包含 uuid 指定要更新的角色）
 class UpdateCharacterView(APIView):
@@ -54,11 +55,51 @@ class CreateCharacterView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = CharacterWriteSerializer(
-            data=request.data, context={'request': request}
-        )
+        serializer = CharacterWriteSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            try:
+                with transaction.atomic():
+                    character = serializer.save()
+
+                    # 兼容 FormData 的布尔值
+                    raw_public = request.data.get('settings_is_public', True)
+                    if isinstance(raw_public, str):
+                        is_public = raw_public.strip().lower() in ('1', 'true', 'yes', 'on')
+                    else:
+                        is_public = bool(raw_public)
+
+                    short_profile = request.data.get('settings_short_profile', '')
+                    voice_uuid = request.data.get('settings_voice_uuid')
+                    should_create_settings = any(
+                        key in request.data for key in ('settings_is_public', 'settings_short_profile', 'settings_voice_uuid')
+                    )
+
+                    if should_create_settings:
+                        voice = None
+                        if voice_uuid:
+                            voice = CharacterVoice.objects.filter(uuid=voice_uuid).first()
+                            if not voice:
+                                return Response(
+                                    {'result': 'error', 'errors': {'settings_voice_uuid': ['音色不存在']}},
+                                    status=status.HTTP_400_BAD_REQUEST
+                                )
+                        else:
+                            voice = CharacterVoice.objects.order_by('created_at').first()
+                            if not voice:
+                                return Response(
+                                    {'result': 'error', 'errors': {'settings_voice_uuid': ['请先创建至少一个音色']}},
+                                    status=status.HTTP_400_BAD_REQUEST
+                                )
+
+                        CharacterSettings.objects.create(
+                            character=character,
+                            voice=voice,
+                            is_public=is_public,
+                            short_profile=short_profile or ''
+                        )
+            except Exception as e:
+                return Response({'result': 'error', 'errors': {'detail': [str(e)]}}, status=status.HTTP_400_BAD_REQUEST)
+
             return Response({'result': 'success', 'character': serializer.data}, status=status.HTTP_201_CREATED)
         return Response({'result': 'error', 'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 

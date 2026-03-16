@@ -10,12 +10,13 @@ class CharacterSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Character
-        fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'author', 'updated_at')
+        fields = ('uuid', 'name', 'gender', 'photo', 'background_photo', 'profile', 'author', 'updated_at')
 
 # character 创建/更新序列化器（统一处理创建与更新，根据是否传入 instance 自动区分）
 class CharacterWriteSerializer(serializers.Serializer):
     uuid = serializers.CharField(read_only=True)
     name = serializers.CharField(required=False, max_length=100)
+    gender = serializers.ChoiceField(required=False, choices=Character.GENDER_TYPES)
     photo = serializers.ImageField(required=False)
     background_photo = serializers.ImageField(required=False)
     profile = serializers.CharField(required=False, max_length=100000)
@@ -35,6 +36,8 @@ class CharacterWriteSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         if 'name' in validated_data:
             instance.name = validated_data['name']
+        if 'gender' in validated_data:
+            instance.gender = validated_data['gender']
         if 'profile' in validated_data:
             instance.profile = validated_data['profile']
         if 'photo' in validated_data:
@@ -69,9 +72,9 @@ class CharacterListSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Character
-        fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'created_at', 'is_friend', 'author')
+        fields = ('uuid', 'name', 'gender', 'photo', 'background_photo', 'profile', 'created_at', 'is_friend', 'author')
 
-# character vedio 序列化器
+# character voice 序列化器
 class CharacterVoiceSerializer(serializers.ModelSerializer):
     
     class Meta:
@@ -80,9 +83,23 @@ class CharacterVoiceSerializer(serializers.ModelSerializer):
         
 # character Settings 序列化器
 class CharacterSettingsSerializer(serializers.ModelSerializer):
-    voice = CharacterVoiceSerializer()
-    character = CharacterSerializers()
+    voice = CharacterVoiceSerializer(read_only=True)
+    character = CharacterSerializers(read_only=True)
+    voice_uuid = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = CharacterSettings
-        fields = ('uuid', 'character', 'gender', 'is_public', 'voice', 'created_at', 'updated_at')
+        fields = ('uuid', 'character', 'is_public', 'short_profile', 'voice', 'voice_uuid', 'created_at', 'updated_at')
+
+    def update(self, instance, validated_data):
+        voice_uuid = validated_data.pop('voice_uuid', None)
+        if voice_uuid:
+            try:
+                voice = CharacterVoice.objects.get(uuid=voice_uuid)
+                instance.voice = voice
+            except CharacterVoice.DoesNotExist:
+                raise serializers.ValidationError({'voice_uuid': ['音色不存在']})
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

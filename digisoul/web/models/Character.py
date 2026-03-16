@@ -73,7 +73,7 @@ class CharacterSettings(models.Model):
     updated_at = models.DateTimeField(default=now)
 
     def __str__(self):
-        return f"{self.character.name} - {self.gender} - {localtime(self.created_at).strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"{self.character.name} - {self.voice.voice_name} - {localtime(self.created_at).strftime('%Y-%m-%d %H:%M:%S')}"
 
     class Meta:
         verbose_name = 'digisoul character settings'

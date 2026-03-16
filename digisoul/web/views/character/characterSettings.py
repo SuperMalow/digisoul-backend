@@ -11,8 +11,14 @@ class GetCharacterSettingsView(APIView):
 
     # 获取角色设置信息
     def get(self, request):
-        character_voices = CharacterSettings.objects.all()
-        return Response({'result': 'success', 'character_voices': CharacterSettingsSerializer(character_voices, many=True).data}, status=status.HTTP_200_OK)
+        character_uuid = request.query_params.get('character_uuid')
+
+        queryset = CharacterSettings.objects.all()
+        if character_uuid:
+            queryset = queryset.filter(character__uuid=character_uuid, character__author=request.user)
+
+        character_settings = CharacterSettingsSerializer(queryset, many=True).data
+        return Response({'result': 'success', 'character_settings': character_settings}, status=status.HTTP_200_OK)
 
 # 更新角色设置信息
 class UpdateCharacterSettingsView(APIView):
