@@ -1,6 +1,6 @@
 # character related serializers
 from rest_framework import serializers
-from web.models.Character import Character
+from web.models.Character import Character, CharacterSettings, CharacterVoice
 from web.serializers.user.account.AccountSerializers import UserSerializers
 
 
@@ -70,4 +70,19 @@ class CharacterListSerializers(serializers.ModelSerializer):
     class Meta:
         model = Character
         fields = ('uuid', 'name', 'photo', 'background_photo', 'profile', 'created_at', 'is_friend', 'author')
+
+# character vedio 序列化器
+class CharacterVoiceSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CharacterVoice
+        fields = ('uuid', 'voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language', 'preview_voice', 'preview_text', 'created_at', 'updated_at')
         
+# character Settings 序列化器
+class CharacterSettingsSerializer(serializers.ModelSerializer):
+    voice = CharacterVoiceSerializer()
+    character = CharacterSerializers()
+
+    class Meta:
+        model = CharacterSettings
+        fields = ('uuid', 'character', 'gender', 'is_public', 'voice', 'created_at', 'updated_at')

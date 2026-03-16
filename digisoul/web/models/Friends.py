@@ -16,6 +16,10 @@ class Friends(models.Model):
     me = models.ForeignKey(DigisoulUser, on_delete=models.CASCADE, related_name='me', to_field='uuid')
     character = models.ForeignKey(Character, on_delete=models.CASCADE, related_name='character', to_field='uuid')
     memory = models.TextField(default='', max_length=10000, blank=True, null=True)
+
+    # 角色与用户的好感度
+    intimacy_score = models.IntegerField(default=0, blank=True, null=True,verbose_name="好感度/亲密度")
+
     created_at = models.DateTimeField(default=now)
     updated_at = models.DateTimeField(default=now)
 

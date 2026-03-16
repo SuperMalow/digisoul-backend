@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models.User import DigisoulUser
 from django.contrib.auth.admin import UserAdmin
-from web.models.Character import Character
+from web.models.Character import Character, CharacterSettings, CharacterVoice
 from web.models.Friends import Friends, Message
 from web.models.Prompt import SystemPrompt
 
@@ -32,7 +32,7 @@ class DigisoulUserAdmin(UserAdmin):
 @admin.register(Character)
 class CharacterAdmin(admin.ModelAdmin):
     raw_id_fields = ('author',) # 关联字段 提高性能 会以分页方式显示
-    list_display = ('uuid', 'name', 'author', 'created_at', 'updated_at')
+    list_display = ('uuid', 'name', 'author', 'gender', 'created_at', 'updated_at')
     list_filter = ('created_at', 'updated_at')
     search_fields = ('uuid', 'name', 'author__username')
     ordering = ('-created_at',)
@@ -75,4 +75,27 @@ class SystemPromptAdmin(admin.ModelAdmin):
     list_per_page = 20
     list_max_show_all = 100
     list_display_links = ('uuid', 'title', 'order_number')
+    ordering = ('-created_at',)
+
+@admin.register(CharacterVoice)
+class CharacterVoiceAdmin(admin.ModelAdmin):
+    list_display = ('uuid', 'voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language', 'preview_voice', 'preview_text', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language')
+    ordering = ('-created_at',)
+    list_per_page = 20
+    list_max_show_all = 100
+    list_display_links = ('uuid', 'voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language', 'preview_voice', 'preview_text')
+    ordering = ('-created_at',)
+
+@admin.register(CharacterSettings)
+class CharacterSettingsAdmin(admin.ModelAdmin):
+    raw_id_fields=('character', 'voice')
+    list_display = ('uuid', 'character', 'is_public', 'voice', 'short_profile', 'created_at', 'updated_at')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('character__name', 'is_public', 'voice__voice_name')
+    ordering = ('-created_at',)
+    list_per_page = 20
+    list_max_show_all = 100
+    list_display_links = ('uuid', 'character', 'is_public', 'voice')
     ordering = ('-created_at',)
