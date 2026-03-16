@@ -7,10 +7,15 @@ from web.serializers.user.account.AccountSerializers import UserSerializers
 # character 获取信息序列化器
 class CharacterSerializers(serializers.ModelSerializer):
     author = UserSerializers()
+    # 将角色的设置一并返回
+    character_settings = serializers.SerializerMethodField(read_only=True)
+
+    def get_character_settings(self, obj):
+        return CharacterSettingsSerializer(obj.character_settings.first()).data if obj.character_settings.first() else None
 
     class Meta:
         model = Character
-        fields = ('uuid', 'name', 'gender', 'photo', 'background_photo', 'profile', 'author', 'updated_at')
+        fields = ('uuid', 'name', 'gender', 'photo', 'background_photo', 'profile', 'author', 'updated_at', 'character_settings')
 
 # character 创建/更新序列化器（统一处理创建与更新，根据是否传入 instance 自动区分）
 class CharacterWriteSerializer(serializers.Serializer):
@@ -24,9 +29,9 @@ class CharacterWriteSerializer(serializers.Serializer):
     def validate(self, attrs):
         # 创建时必须有 name, photo, background_photo, profile
         if not self.instance:
-            for field in ('name', 'photo', 'background_photo', 'profile'):
+            for field in ['name', 'photo', 'background_photo', 'profile']:
                 if field not in attrs:
-                    raise serializers.ValidationError({field: ['创建角色时此字段必填']})
+                    raise serializers.ValidationError({'detail': f'创建角色时{field}字段必填'})
         return attrs
 
     def create(self, validated_data):
@@ -57,6 +62,12 @@ class CharacterWriteSerializer(serializers.Serializer):
 class CharacterListSerializers(serializers.ModelSerializer):
     is_friend = serializers.SerializerMethodField(read_only=True)
     author = serializers.SerializerMethodField(read_only=True)
+    # 将角色的设置一并返回
+    character_settings = serializers.SerializerMethodField(read_only=True)
+
+    def get_character_settings(self, obj):
+        return CharacterSettingsSerializer(obj.character_settings.first()).data if obj.character_settings.first() else None
+
 
     def get_author(self, obj):
         return UserSerializers(obj.author).data if obj.author_id else None
@@ -72,7 +83,7 @@ class CharacterListSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Character
-        fields = ('uuid', 'name', 'gender', 'photo', 'background_photo', 'profile', 'created_at', 'is_friend', 'author')
+        fields = ('uuid', 'name', 'gender', 'photo', 'background_photo', 'profile', 'created_at', 'is_friend', 'author', 'character_settings')
 
 # character voice 序列化器
 class CharacterVoiceSerializer(serializers.ModelSerializer):
@@ -84,12 +95,13 @@ class CharacterVoiceSerializer(serializers.ModelSerializer):
 # character Settings 序列化器
 class CharacterSettingsSerializer(serializers.ModelSerializer):
     voice = CharacterVoiceSerializer(read_only=True)
-    character = CharacterSerializers(read_only=True)
+    # 只返回角色 uuid，避免嵌套再次引入 CharacterSerializers 造成循环
+    character_uuid = serializers.UUIDField(source='character.uuid', read_only=True)
     voice_uuid = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = CharacterSettings
-        fields = ('uuid', 'character', 'is_public', 'short_profile', 'voice', 'voice_uuid', 'created_at', 'updated_at')
+        fields = ('uuid', 'character_uuid', 'is_public', 'short_profile', 'voice', 'voice_uuid', 'created_at', 'updated_at')
 
     def update(self, instance, validated_data):
         voice_uuid = validated_data.pop('voice_uuid', None)

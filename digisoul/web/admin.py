@@ -79,19 +79,19 @@ class SystemPromptAdmin(admin.ModelAdmin):
 
 @admin.register(CharacterVoice)
 class CharacterVoiceAdmin(admin.ModelAdmin):
-    list_display = ('uuid', 'voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language', 'preview_voice', 'preview_text', 'created_at', 'updated_at')
+    list_display = ('uuid', 'voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language', 'preview_voice', 'created_at', 'updated_at')
     list_filter = ('created_at', 'updated_at')
     search_fields = ('voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language')
     ordering = ('-created_at',)
     list_per_page = 20
     list_max_show_all = 100
-    list_display_links = ('uuid', 'voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language', 'preview_voice', 'preview_text')
+    list_display_links = ('uuid', 'voice_name', 'voice_types', 'voice_speed', 'voice_pitch', 'voice_volume', 'voice_style', 'voice_emotion', 'voice_language', 'preview_voice',)
     ordering = ('-created_at',)
 
 @admin.register(CharacterSettings)
 class CharacterSettingsAdmin(admin.ModelAdmin):
     raw_id_fields=('character', 'voice')
-    list_display = ('uuid', 'character', 'is_public', 'voice', 'short_profile', 'created_at', 'updated_at')
+    list_display = ('uuid', 'character', 'is_public', 'voice', 'created_at', 'updated_at')
     list_filter = ('created_at', 'updated_at')
     search_fields = ('character__name', 'is_public', 'voice__voice_name')
     ordering = ('-created_at',)
