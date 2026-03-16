@@ -43,9 +43,9 @@ def _get_run_task_header(task_id):
                 "voice": "longfeifei_v3",
                 "format": "mp3",
                 "sample_rate": 22050, # 采样率
-                "volume": 50, # 音量
+                "volume": 52, # 音量
                 "rate": 1.2, # 语速
-                "pitch": 1.1 # 音调
+                "pitch": 1.09 # 音调
             },
             "input": {}
         }
