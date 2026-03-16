@@ -120,8 +120,9 @@ class DeleteCharacterView(APIView):
             delete_old_photo(character.background_photo)
             # 删除角色
             character.delete()
-            return Response({'result': 'success', 'message': '角色删除成功', 'character': CharacterSerializers(character).data}, status=status.HTTP_200_OK)
+            return Response({'result': 'success', 'message': '角色删除成功'}, status=status.HTTP_200_OK)
         except Exception as e:
+            print(str(e))
             return Response({'result': 'error', 'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 # 获取角色信息

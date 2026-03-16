@@ -45,17 +45,22 @@ class CharacterWriteSerializer(serializers.Serializer):
             instance.gender = validated_data['gender']
         if 'profile' in validated_data:
             instance.profile = validated_data['profile']
+
+        # 先记录旧文件引用
+        old_photo = instance.photo if 'photo' in validated_data else None
+        old_bg = instance.background_photo if 'background_photo' in validated_data else None
+
         if 'photo' in validated_data:
-            old_photo = instance.photo
             instance.photo = validated_data['photo']
-            if old_photo and old_photo != instance.photo:
-                old_photo.delete(save=False)
         if 'background_photo' in validated_data:
-            old_bg = instance.background_photo
             instance.background_photo = validated_data['background_photo']
-            if old_bg and old_bg != instance.background_photo:
-                old_bg.delete(save=False)
         instance.save()
+
+        # 保存成功后，再安全地删除旧文件
+        if old_photo and old_photo != instance.photo:
+            old_photo.delete(save=False)
+        if old_bg and old_bg != instance.background_photo:
+            old_bg.delete(save=False)
         return instance
 
 # character 列表序列化器
