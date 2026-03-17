@@ -35,10 +35,10 @@ class SSERenderer(BaseRenderer):
 # 手动添加系统提示词
 def add_system_prompt(state, friends):
     msgs = state['messages']
-    system_prompt = SystemPrompt.objects.filter(title='角色与用户之间的聊天记录').order_by('order_number')
+    system_prompt = SystemPrompt.objects.filter(title='回复').order_by('order_number')
     prompt = ''
-    for prompt  in system_prompt:
-        prompt += prompt.prompt
+    for p in system_prompt:
+        prompt += p.prompt
     prompt += f'\n[角色性格]: {friends.character.profile}\n'
     # 添加长期记忆
     prompt += f'\n[长期记忆]: {friends.memory}\n'
