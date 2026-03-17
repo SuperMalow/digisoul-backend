@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from dotenv import load_dotenv
+import os
+import mimetypes
+
+mimetypes.add_type("application/javascript", ".mjs", True)
 
 # 自动加载 .env 文件
 load_dotenv()
@@ -27,13 +31,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-48bp^1ebc+3l7l78(w@l-77*6_)%td1yzkk4c8_zwedjb-#$!3"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True")
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -91,6 +93,18 @@ DATABASES = {
     }
 }
 
+# 从环境变量读取，如果读取不到则使用默认值（方便本地开发）
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "shengwen123")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+
+# Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://default:{REDIS_PASSWORD}@{REDIS_HOST}:6379/0",
+    }
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -126,17 +140,21 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-# 开发阶段使用
-STATIC_URL = "static/"
-# 生产阶段使用
-# STATIC_ROOT = BASE_DIR / "static"
-
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+if DEBUG:
+    STATIC_URL = "static/"
+else:
+    STATIC_URL = "static/"
+    STATIC_ROOT = BASE_DIR / "static"
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+if DEBUG:
+    MEDIA_URL = "media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+else:
+    MEDIA_URL = "media/"
+    MEDIA_ROOT = BASE_DIR / "media"
 
 # jwt 认证
 from datetime import timedelta
@@ -159,11 +177,7 @@ SIMPLE_JWT = {
 
 # 配置 cors 跨域
 CORS_ALLOW_CREDENTIALS = True
-# CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-]
+CORS_ALLOW_ALL_ORIGINS = True
 
 # User Model
 # 字符串模型引用必须是 'app_label.ModelName' 形式
