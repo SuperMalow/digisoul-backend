@@ -29,6 +29,7 @@ class SSERenderer(BaseRenderer):
 def event_stream(agent, inputs):
     full_output = ''
     for msg, metadata in agent.stream(inputs, stream_mode="messages"):
+        print('msg => ', msg)
         if isinstance(msg, BaseMessageChunk):
             if msg.content:
                 full_output += msg.content
@@ -43,34 +44,39 @@ class CharacterProfileOptimizationView(APIView):
     renderer_classes = [SSERenderer]
 
     # 添加性格优化系统提示词
-    def _add_system_prompt(self, state):
+    def _add_system_prompt(self, state, character):
         msgs = state['messages']
         system_prompt = SystemPrompt.objects.filter(title='性格优化').order_by('order_number')
         prompt = ''
         print('查询到 性格优化 系统提示词 ===> ', len(system_prompt))
         for p in system_prompt:
             prompt += p.prompt
+        prompt += f'\n[角色名字]: {character.name}\n'
+        prompt += f'\n[角色性别]: {character.gender}\n'
+        prompt += f'\n[用户原本所描述的角色介绍]: {character.profile}\n\n'
         return {'messages': [SystemMessage(content=prompt)] + msgs}
 
     # 性格优化请求
     def post(self, request):
         character_uuid = request.data.get('character_uuid')
+        character_description = request.data.get('character_description')
         if not character_uuid:
             return Response({'result': 'error', 'message': '没有权限操作', 'errors': 'character_uuid is null'}, status=status.HTTP_401_UNAUTHORIZED)
+        if not character_description:
+            return Response({'result': 'error', 'message': 'character_description不能为空', 'errors': 'character_description is null'}, status=status.HTTP_401_UNAUTHORIZED)
         character = Character.objects.filter(uuid=character_uuid, author=request.user).first()
         if not character:
             return Response({'result': 'error', 'message': '角色不存在', 'errors': 'character not found'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # 调用大模型
         agent = ImageGraph.create_image_agent()
+        # 创建输入
+        new_description = f'[当前用户描述的角色介绍]: {character_description}\n'
         inputs = {
-            'messages': [HumanMessage(content=character.profile)]
+            'messages': [HumanMessage(content=new_description)]
         }
-        inputs = self._add_system_prompt(inputs)
+        inputs = self._add_system_prompt(inputs, character)
 
-        res = agent.invoke(inputs)
-
-        print('res => ', res)
         response = StreamingHttpResponse(event_stream(agent, inputs), content_type='text/event-stream')
         response['Cache-Control'] = 'no-cache'
         response['Content-Type'] = 'text/event-stream'

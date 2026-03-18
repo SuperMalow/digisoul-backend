@@ -20,9 +20,9 @@ class ImageGraph:
         llm = ChatOpenAI(
             model='qwen3-max',
             base_url=os.getenv('API_BASE'),
-            aoi_key=os.getenv('DASHSCOPE_API_KEY'),
+            api_key=os.getenv('DASHSCOPE_API_KEY'),
             streaming=True,
-            extra_body={"enable_thinking": True},
+            extra_body={"enable_thinking": False},
             model_kwargs={
                 "stream_options": {
                     "include_usage": True, # 输出token的消耗数
