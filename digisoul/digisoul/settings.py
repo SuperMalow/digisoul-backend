@@ -182,3 +182,16 @@ CORS_ALLOW_ALL_ORIGINS = True
 # User Model
 # 字符串模型引用必须是 'app_label.ModelName' 形式
 AUTH_USER_MODEL = 'web.DigisoulUser'
+
+# 从环境变量读取，如果读取不到则使用默认值（方便本地开发）
+CELERY_PASSWORD = os.getenv("CELERY_PASSWORD", "shengwen123")
+CELERY_HOST = os.getenv("CELERY_HOST", "localhost")
+
+# Celery 配置
+CELERY_BROKER_URL = f'redis://default:{CELERY_PASSWORD}@{CELERY_HOST}:6379/2'
+CELERY_RESULT_BACKEND = f'redis://default:{CELERY_PASSWORD}@{CELERY_HOST}:6379/2'
+# 指定任务序列化格式
+CELERY_TASK_SERIALIZER = 'json'
+# 指定结果序列化格式
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Shanghai'
