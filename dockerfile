@@ -27,7 +27,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 WORKDIR /app/digisoul
 
 # 收集静态文件（Django Admin、DRF 等）
-RUN uv run manage.py collectstatic --noinput
+RUN DEBUG="" uv run manage.py collectstatic --noinput
 
 # 通过 gunicorn 启动（4 个 worker 进程，180 秒超时适配 AI 长请求）
 CMD ["uv", "run", "gunicorn", "digisoul.wsgi:application", \
