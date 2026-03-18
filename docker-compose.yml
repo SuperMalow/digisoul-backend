@@ -10,8 +10,8 @@ services:
     volumes:
       - db-data:/app/digisoul/data
       # 绑定到宿主机目录，便于 Nginx 直接提供静态/媒体文件
-      - ./media:/app/digisoul/media
-      - ./static:/app/digisoul/static
+      - /var/www/proxy/digisoul/media:/app/digisoul/media
+      - /var/www/proxy/digisoul/static:/app/digisoul/static
     depends_on:
       - redis
 
@@ -23,7 +23,6 @@ services:
       - .env
     volumes:
       - db-data:/app/digisoul/data
-      - ./media:/app/digisoul/media
     command: ["uv", "run", "celery", "-A", "digisoul", "worker", "--loglevel=info", "-P", "threads", "--concurrency=2"]
     depends_on:
       - redis
