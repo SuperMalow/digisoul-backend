@@ -141,19 +141,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 if DEBUG:
-    STATIC_URL = "static/"
+    STATIC_URL = "/static/"
 else:
-    STATIC_URL = "static/"
+    STATIC_URL = "/static/"
     STATIC_ROOT = BASE_DIR / "static"
 
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 if DEBUG:
-    MEDIA_URL = "media/"
+    MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 else:
-    MEDIA_URL = "media/"
+    MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 
 # jwt 认证
