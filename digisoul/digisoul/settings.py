@@ -179,6 +179,9 @@ SIMPLE_JWT = {
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 
+# CSRF 信任域名
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173").split(",")
+
 # User Model
 # 字符串模型引用必须是 'app_label.ModelName' 形式
 AUTH_USER_MODEL = 'web.DigisoulUser'
