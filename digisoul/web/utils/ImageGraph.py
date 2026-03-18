@@ -16,11 +16,12 @@ class ImageGraph:
 
     @staticmethod
     def create_image_agent():
-        tools = [generate_image]
+        tools = []
         llm = ChatOpenAI(
-            model='qwen3.5-flash',
+            model='qwen3-max',
             base_url=os.getenv('API_BASE'),
-            streaming=False,
+            aoi_key=os.getenv('DASHSCOPE_API_KEY'),
+            streaming=True,
             extra_body={"enable_thinking": True},
             model_kwargs={
                 "stream_options": {
@@ -45,7 +46,7 @@ class ImageGraph:
         graph = StateGraph(MessagesState)
         graph.add_node('image', model_call)
         graph.add_node('tools', toolsNode)
-        
+
         graph.add_edge(START, 'image')
         graph.add_conditional_edges(
             'image',
