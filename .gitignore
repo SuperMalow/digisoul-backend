@@ -224,8 +224,8 @@ digisoul/static/frontend/
 # Media files
 digisoul/media/
 
-# migrations
-digisoul/web/migrations/
+# migrations (保留迁移文件，只忽略缓存)
+digisoul/web/migrations/__pycache__/
 
 # .env
 *.env

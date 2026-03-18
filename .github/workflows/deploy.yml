@@ -64,5 +64,6 @@ jobs:
             docker compose down
             docker compose pull
             docker compose up -d
+            docker compose exec backend uv run manage.py migrate --noinput
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
