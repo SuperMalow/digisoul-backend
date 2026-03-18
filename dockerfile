@@ -23,5 +23,14 @@ RUN uv sync --frozen --no-cache
 # 环境变量：确保使用 uv 创建的虚拟环境
 ENV PATH="/app/.venv/bin:$PATH"
 
-# 启动脚本（可以根据需要修改）
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Django 项目根目录
+WORKDIR /app/digisoul
+
+# 收集静态文件（Django Admin、DRF 等）
+RUN uv run manage.py collectstatic --noinput
+
+# 通过 gunicorn 启动（4 个 worker 进程，180 秒超时适配 AI 长请求）
+CMD ["uv", "run", "gunicorn", "digisoul.wsgi:application", \
+     "--bind", "0.0.0.0:8000", \
+     "--workers", "4", \
+     "--timeout", "180"]

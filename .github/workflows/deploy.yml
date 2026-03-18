@@ -61,7 +61,8 @@ jobs:
           script: |
             cd /opt/digisoul
             export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
-            docker compose pull backend
-            docker compose up -d --remove-orphans
+            docker compose down
+            docker compose pull
+            docker compose up -d
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}

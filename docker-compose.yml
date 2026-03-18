@@ -6,7 +6,24 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "8001:8000"
+    volumes:
+      - db-data:/app/digisoul/data
+      - media-data:/app/digisoul/media
+      - static-data:/app/digisoul/static
+    depends_on:
+      - redis
+
+  # Celery 异步任务
+  celery:
+    image: ${DOCKERHUB_USERNAME}/digisoul-backend:latest
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - db-data:/app/digisoul/data
+      - media-data:/app/digisoul/media
+    command: ["uv", "run", "celery", "-A", "digisoul", "worker", "--loglevel=info", "-P", "threads", "--concurrency=2"]
     depends_on:
       - redis
 
@@ -17,3 +34,11 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
     expose:
       - "6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  db-data:
+  media-data:
+  static-data:
+  redis-data:
