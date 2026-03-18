@@ -1,13 +1,8 @@
-version: '3.8'
-
 services:
-  # 后端服务
+  # 后端服务（从 Docker Hub 拉取镜像）
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/digisoul-backend:latest
     restart: always
-    # 加载服务器本地的 .env 文件，包含数据库密码、SECRET_KEY 等
     env_file:
       - .env
     ports:
@@ -19,7 +14,6 @@ services:
   redis:
     image: redis:alpine
     restart: always
-    # 关键：启动时设置密码
     command: redis-server --requirepass ${REDIS_PASSWORD}
     expose:
       - "6379"
